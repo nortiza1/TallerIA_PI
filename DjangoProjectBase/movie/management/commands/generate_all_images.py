@@ -10,6 +10,7 @@ Uso:
     python manage.py generate_all_images            # todas las peliculas sin imagen generada
     python manage.py generate_all_images --limit 10 # solo las primeras N (pruebas rapidas)
 """
+import os
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from movie.models import Movie
@@ -21,9 +22,13 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=None)
+        parser.add_argument('--only-missing', action='store_true',
+                             help='Salta las peliculas que ya tienen una imagen generada (m_*.png)')
 
     def handle(self, *args, **options):
         movies = Movie.objects.all()
+        if options['only_missing']:
+            movies = [m for m in movies if 'm_' not in os.path.basename(m.image.name)]
         if options['limit']:
             movies = movies[:options['limit']]
 

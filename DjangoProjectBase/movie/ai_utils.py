@@ -3,9 +3,11 @@ Utilidades de IA compartidas por los comandos y vistas del Taller 3.
 
 Este proyecto intenta usar la API real de OpenAI (con la key en openAI.env).
 Si la cuenta no tiene creditos (error 429 insufficient_quota) o no hay key,
-se usa automaticamente Pollinations.ai como respaldo: un servicio gratuito,
-sin llave, compatible con el SDK de openai para texto e imagenes. Esto sigue
-la indicacion del profesor de usar una API alternativa cuando no hay creditos.
+se usa automaticamente una alternativa gratuita, tal como autorizo el profesor:
+- Texto: Pollinations.ai (sin llave, compatible con el SDK de openai).
+- Imagenes: HuggingFace Inference API (gratis, requiere solo un access token
+  gratuito, sin tarjeta ni creditos) con Pollinations.ai como respaldo si
+  HuggingFace no responde.
 
 Para los embeddings (paso 6/7 del taller) se usa sentence-transformers de
 forma local (modelo all-MiniLM-L6-v2): son embeddings semanticos reales,
@@ -25,6 +27,9 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', 'openAI.env'))
 POLLINATIONS_BASE_URL = 'https://text.pollinations.ai/openai'
 POLLINATIONS_MODEL = 'openai'
 IMAGE_BASE_URL = 'https://image.pollinations.ai/prompt'
+
+HF_IMAGE_MODEL = 'stabilityai/stable-diffusion-3-medium-diffusers'
+HF_IMAGE_URL = f'https://router.huggingface.co/hf-inference/models/{HF_IMAGE_MODEL}'
 
 _real_client = None
 _fallback_client = None
@@ -69,10 +74,25 @@ def get_completion(prompt, model='gpt-3.5-turbo'):
 
 
 def generate_image_bytes(prompt, width=256, height=384):
-    """Genera una imagen con Pollinations.ai (gratis, sin llave) y devuelve los bytes."""
+    """Genera una imagen con IA y devuelve los bytes.
+
+    Intenta primero HuggingFace Inference API (gratis con token, sin creditos).
+    Si falla (limite de cuota, error de red, etc.) usa Pollinations.ai como
+    respaldo (gratis y sin llave, pero con limites mas estrictos)."""
+    hf_token = os.environ.get('huggingface_token')
+    if hf_token:
+        try:
+            headers = {'Authorization': f'Bearer {hf_token}'}
+            response = requests.post(HF_IMAGE_URL, headers=headers, json={'inputs': prompt}, timeout=90)
+            response.raise_for_status()
+            if response.headers.get('content-type', '').startswith('image/'):
+                return response.content
+        except Exception as e:
+            print(f'⚠️  HuggingFace no disponible ({e}); usando Pollinations.ai como respaldo')
+
     import urllib.parse
     encoded_prompt = urllib.parse.quote(prompt)
-    url = f'{IMAGE_BASE_URL}/{encoded_prompt}?width={width}&height={height}&nologo=true&model=flux'
+    url = f'{IMAGE_BASE_URL}/{encoded_prompt}?width={width}&height={height}&nologo=true'
     response = requests.get(url, timeout=60)
     response.raise_for_status()
     return response.content
