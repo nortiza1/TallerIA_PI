@@ -2,7 +2,9 @@ from django.shortcuts import render
 from django.http import HttpResponse
 
 from .models import Movie
+from .ai_utils import get_embedding, cosine_similarity
 
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import io
@@ -25,8 +27,37 @@ def about(request):
     return render(request, 'about.html')
 
 def signup(request):
-    email = request.GET.get('email') 
+    email = request.GET.get('email')
     return render(request, 'signup.html', {'email':email})
+
+
+def recommend(request):
+    """Sistema de recomendacion: recibe un prompt del usuario, genera su embedding
+    y devuelve la pelicula de la base de datos con mayor similitud de coseno."""
+    prompt = request.GET.get('prompt', '').strip()
+    recommended_movie = None
+    similarity_score = None
+
+    if prompt:
+        prompt_emb = get_embedding(prompt)
+
+        best_movie = None
+        max_similarity = -1
+        for movie in Movie.objects.all():
+            movie_emb = np.frombuffer(movie.emb, dtype=np.float32)
+            similarity = cosine_similarity(prompt_emb, movie_emb)
+            if similarity > max_similarity:
+                max_similarity = similarity
+                best_movie = movie
+
+        recommended_movie = best_movie
+        similarity_score = round(max_similarity, 4)
+
+    return render(request, 'recommend.html', {
+        'prompt': prompt,
+        'movie': recommended_movie,
+        'similarity': similarity_score,
+    })
 
 
 def statistics_view0(request):

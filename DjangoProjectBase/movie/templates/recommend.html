@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container">
+    <h1>🤖 Sistema de Recomendación de Películas con IA</h1>
+    <p>Escribe una descripción o temática y la IA calculará, usando embeddings semánticos
+        y similitud de coseno, la película más afín de la base de datos.</p>
+
+    <form action="{% url 'recommend' %}">
+        <div class="mb-3">
+            <label for="prompt" class="form-label">Describe la película que buscas:</label>
+            <input type="text" class="form-control" name="prompt" id="prompt"
+                   placeholder="Ej: película de ciencia ficción sobre un viaje espacial"
+                   value="{{ prompt }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Recomendar</button>
+    </form>
+
+    <br/>
+
+    {% if prompt %}
+        {% if movie %}
+        <p>Buscando recomendación para: <strong>"{{ prompt }}"</strong></p>
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            <div class="col">
+                <div class="card">
+                    <img src="{{ movie.image.url }}" class="card-img-top" alt="{{ movie.title }}">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">{{ movie.title }}</h5>
+                        <p class="card-text">{{ movie.description }}</p>
+                        <p class="card-text"><small class="text-muted">{{ movie.genre }} | {{ movie.year }}</small></p>
+                        <span class="badge bg-success">Similitud de coseno: {{ similarity }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p>No se encontró ninguna recomendación.</p>
+        {% endif %}
+    {% endif %}
+</div>
+
+{% endblock content %}
