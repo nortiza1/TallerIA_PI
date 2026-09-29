@@ -4,7 +4,7 @@ from movie.ai_utils import get_completion
 
 
 class Command(BaseCommand):
-    help = "Update movie descriptions using the OpenAI API (fallback: Pollinations.ai)"
+    help = "Update movie descriptions using the OpenAI API (fallback: HuggingFace)"
 
     def handle(self, *args, **kwargs):
         # Instruccion que guia la respuesta de la IA

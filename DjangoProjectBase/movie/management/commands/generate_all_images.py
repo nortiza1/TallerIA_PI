@@ -4,7 +4,7 @@ Reemplazo del paso 'update_images_from_folder' del Taller 3.
 El profesor indico que el enlace de Sharepoint con las imagenes ya generadas
 se rompio, y autorizo generarlas de forma independiente. Este comando genera
 una imagen (poster) con IA para cada pelicula de la base de datos usando
-Pollinations.ai (gratis, sin llave) y actualiza el campo image.
+OpenAI (o HuggingFace como alternativa) y actualiza el campo image.
 
 Uso:
     python manage.py generate_all_images            # todas las peliculas sin imagen generada
@@ -18,7 +18,7 @@ from movie.ai_utils import generate_image_bytes
 
 
 class Command(BaseCommand):
-    help = "Generate an AI-generated poster image for every movie (Pollinations.ai)"
+    help = "Generate an AI-generated poster image for every movie (OpenAI/HuggingFace)"
 
     def add_arguments(self, parser):
         parser.add_argument('--limit', type=int, default=None)

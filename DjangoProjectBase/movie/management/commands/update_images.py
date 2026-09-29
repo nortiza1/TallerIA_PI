@@ -6,7 +6,7 @@ from movie.ai_utils import generate_image_bytes
 
 
 class Command(BaseCommand):
-    help = "Generate an AI image (Pollinations.ai) and update movie image field"
+    help = "Generate an AI image (OpenAI/HuggingFace) and update movie image field"
 
     def handle(self, *args, **kwargs):
         movies = Movie.objects.all()
