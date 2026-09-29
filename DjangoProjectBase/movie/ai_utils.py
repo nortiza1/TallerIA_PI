@@ -9,9 +9,11 @@ Usa unicamente las dos APIs sugeridas por el profesor:
 Si ninguna de las dos tiene cuota disponible, las funciones lanzan la
 excepcion correspondiente (no hay respaldo con servicios no oficiales).
 
-Para los embeddings (paso 6/7 del taller) se usa sentence-transformers de
-forma local (modelo all-MiniLM-L6-v2): son embeddings semanticos reales,
-generados por un modelo de IA, sin depender de creditos de ninguna API.
+Para los embeddings (paso 6/7 del taller) se intenta primero la API de
+HuggingFace (modelo all-MiniLM-L6-v2, via Inference API); si no responde
+(sin cuota, sin token, error de red), se usa el mismo modelo pero corriendo
+localmente con sentence-transformers, para que la funcionalidad nunca se
+caiga por completo.
 """
 import os
 
@@ -28,6 +30,11 @@ HF_CHAT_URL = 'https://router.huggingface.co/v1/chat/completions'
 
 HF_IMAGE_MODEL = 'stabilityai/stable-diffusion-3-medium-diffusers'
 HF_IMAGE_URL = f'https://router.huggingface.co/hf-inference/models/{HF_IMAGE_MODEL}'
+
+HF_EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2'
+HF_EMBEDDING_URL = (
+    f'https://router.huggingface.co/hf-inference/models/{HF_EMBEDDING_MODEL}/pipeline/feature-extraction'
+)
 
 _openai_client = None
 _embedding_model = None
@@ -108,7 +115,20 @@ def get_embedding_model():
 
 
 def get_embedding(text):
-    """Devuelve el embedding (vector numpy float32) de un texto."""
+    """Devuelve el embedding (vector numpy float32) de un texto.
+
+    Intenta primero la API de HuggingFace (mismo modelo all-MiniLM-L6-v2);
+    si falla (sin cuota, sin token, error de red), usa el modelo local."""
+    hf_token = os.environ.get('huggingface_token')
+    if hf_token:
+        try:
+            headers = {'Authorization': f'Bearer {hf_token}'}
+            response = requests.post(HF_EMBEDDING_URL, headers=headers, json={'inputs': text}, timeout=30)
+            response.raise_for_status()
+            return np.array(response.json(), dtype=np.float32)
+        except Exception as e:
+            print(f'⚠️  HuggingFace embeddings no disponible ({e}); usando modelo local')
+
     model = get_embedding_model()
     vec = model.encode(text)
     return np.array(vec, dtype=np.float32)
