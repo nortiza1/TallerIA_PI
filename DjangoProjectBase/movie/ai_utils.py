@@ -86,7 +86,7 @@ def generate_image_bytes(prompt, width=256, height=384):
     if client is not None:
         try:
             response = client.images.generate(
-                model='dall-e-2', prompt=prompt, size='256x256', quality='standard', n=1,
+                model='dall-e-3', prompt=prompt, size='1024x1024', quality='standard', n=1,
             )
             image_url = response.data[0].url
             image_response = requests.get(image_url, timeout=60)
